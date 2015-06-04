@@ -22,31 +22,28 @@ exports.initialize = function(pathsObj){
   });
 };
 
-exports.accessList = function(callback) {
-  fs.readFile(exports.paths.list, function(err, data) {
-    var parseList = JSON.parse(data);
-    return callback(parseList);
-  });
-};
+exports.readListOfUrls = function(callback){
 
-exports.readListOfUrls = function(){
+  fs.readFile(exports.paths.list, 'utf8', function(err, data) {
+    console.log('we are inside');
+    var curContentsArray = data.split('\n');
+    callback(curContentsArray);
+  });
 };
 
 exports.isUrlInList = function(url){
-  return this.accessList(function(parseList){
-    return _.indexOf(parseList.all, url) >= 0 ? true : false;
+  fs.readFile(exports.paths.list, 'utf8', function(err, data) {
+    var curContentsArray = data.split('\n');
+    return _.indexOf(curContentsArray, url) > -1 ? true : false;
   });
-  // fs.readFile(paths.list, function(err, data) {
-  //   var parseList = JSON.parse(data);
-  //   return _.indexOf(parseList.all, url) >= 0 ? true : false;
-  // });
 };
 
 exports.addUrlToList = function(url){
-  this.accessList(function(parseList){
-    parseList.all.push(url);
+  fs.readFile(exports.paths.list, function(err, data) {
+    var curContents = data;
+    curContents += url + '\n';
 
-    fs.writeFile(exports.paths.list, JSON.stringify(parseList), function(err) {
+    fs.writeFile(exports.paths.list, curContents, function(err) {
       if(err) {
         console.log(err);
       }
@@ -55,8 +52,8 @@ exports.addUrlToList = function(url){
 };
 
 exports.isURLArchived = function(url){
-  return this.accessList(function(parseList){
-    return _.indexOf(parseList.archived, url) >= 0 ? true : false;
+  fs.readdir(exports.paths.archivedSites, function(err, files) {
+    return _.indexOf(files, url) > -1 ? true : false;
   });
 };
 
