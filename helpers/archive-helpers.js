@@ -13,7 +13,6 @@ exports.paths = {
   'siteAssets' : path.join(__dirname, '../web/public'),
   'archivedSites' : path.join(__dirname, '../archives/sites'),
   'list' : path.join(__dirname, '../archives/sites.txt')
-  // 'index' : path.join(__dirname, './public/index.html')
 };
 
 // Used for stubbing paths for jasmine tests, do not modify
@@ -23,20 +22,47 @@ exports.initialize = function(pathsObj){
   });
 };
 
-// The following function names are provided to you to suggest how you might
-// modularize your code. Keep it clean!
+exports.accessList = function(callback) {
+  fs.readFile(exports.paths.list, function(err, data) {
+    var parseList = JSON.parse(data);
+    return callback(parseList);
+  });
+};
 
 exports.readListOfUrls = function(){
 };
 
-exports.isUrlInList = function(){
+exports.isUrlInList = function(url){
+  return this.accessList(function(parseList){
+    return _.indexOf(parseList.all, url) >= 0 ? true : false;
+  });
+  // fs.readFile(paths.list, function(err, data) {
+  //   var parseList = JSON.parse(data);
+  //   return _.indexOf(parseList.all, url) >= 0 ? true : false;
+  // });
 };
 
-exports.addUrlToList = function(){
+exports.addUrlToList = function(url){
+  this.accessList(function(parseList){
+    parseList.all.push(url);
+
+    fs.writeFile(exports.paths.list, JSON.stringify(parseList), function(err) {
+      if(err) {
+        console.log(err);
+      }
+    });
+  });
 };
 
-exports.isURLArchived = function(){
+exports.isURLArchived = function(url){
+  return this.accessList(function(parseList){
+    return _.indexOf(parseList.archived, url) >= 0 ? true : false;
+  });
 };
 
 exports.downloadUrls = function(){
+};
+
+exports.getArchivedUrl = function(url){
+ //return string
 };
