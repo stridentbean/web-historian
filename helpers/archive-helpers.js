@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
+var request = require('request');
 
 /*
  * You will need to reuse the same paths many times over in the course of this sprint.
@@ -23,18 +24,19 @@ exports.initialize = function(pathsObj){
 };
 
 exports.readListOfUrls = function(callback){
-
   fs.readFile(exports.paths.list, 'utf8', function(err, data) {
-    console.log('we are inside');
-    var curContentsArray = data.split('\n');
-    callback(curContentsArray);
+    var newData = data.slice(0, data.length-1);
+    var urlArray = newData.split('\n');
+    callback(urlArray);
   });
 };
 
-exports.isUrlInList = function(url){
+exports.isUrlInList = function(url, callback){
   fs.readFile(exports.paths.list, 'utf8', function(err, data) {
+    data = data.replace(/\//g, "%10");
     var curContentsArray = data.split('\n');
-    return _.indexOf(curContentsArray, url) > -1 ? true : false;
+    result = _.indexOf(curContentsArray, url) > -1 ? true : false;
+    callback(result);
   });
 };
 
@@ -51,15 +53,56 @@ exports.addUrlToList = function(url){
   });
 };
 
-exports.isURLArchived = function(url){
+exports.isUrlArchived = function(url, callback){
+  url = url.replace(/\//g, "%10");
   fs.readdir(exports.paths.archivedSites, function(err, files) {
-    return _.indexOf(files, url) > -1 ? true : false;
+    if(err) {
+      console.log(err);
+    }else{
+      var inArchive = _.indexOf(files, url) > -1 ? true : false;
+      callback(inArchive);
+    }
   });
 };
 
 exports.downloadUrls = function(){
+  console.log("inside!");
+  // fs.writeFile('/Users/student/2015-05-web-historian/workers/logfile.txt', 'abcd', function(err){
+  //   console.log(err);
+  // });
+
+  exports.readListOfUrls(function(urlArray){
+      console.log('urlArray: ' + urlArray);
+    _.each(urlArray, function(element, index, collection){
+      console.log('element: ' + element);
+      var normalElement = element.replace(/%2F/g,"/");
+      normalElement = normalElement.replace(/%3A/g,":");
+
+      request(normalElement, function (error, response, body) {
+        console.log('normalElement:' + normalElement);
+        console.log('inside request' + body);
+        if (!error && response.statusCode == 200) {
+
+          fs.writeFile('/Users/student/2015-05-web-historian/archives/sites/' + element, body, function(err){
+            if(err){
+              return;
+            }
+
+          });
+        }
+      });
+    });
+  });
+
 };
 
-exports.getArchivedUrl = function(url){
- //return string
+exports.getArchivedUrl = function(url, callback){
+  url = url.replace(/\//g, "%10");
+  fs.readFile(exports.paths.archivedSites + '/' + url, function (err, data) {
+    if(err) {
+      console.log(err);
+    } else {
+      callback(data);
+    }
+  })
 };

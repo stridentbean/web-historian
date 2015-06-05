@@ -1,6 +1,6 @@
 var path = require('path');
 var dispatcher = require('httpdispatcher');
-var archive = require('../helpers/archive-helpers');
+var archive = require('..//helpers/archive-helpers');
 var httpHelpers = require('./http-helpers');
 var url = require('url');
 var fs = require('fs');
@@ -34,37 +34,40 @@ exports.handleRequest = function (req, res) {
   }catch(err){
     console.log(err);
   }
-  // res.end(archive.paths.list);
+
 };
 
-dispatcher.onGet("/", function(req, res) {
+dispatcher.onGet('/', function(req, res) {
   res.writeHead(200, httpHelpers.headers);
   sendFile(path.join(__dirname, './public/index.html'), res);
 });
 
-
 dispatcher.onPost("/", function(req, res){
-
-  // var thisURL = url.parse(req.url);
-  // console.log("request:" + thisURL);
+  console.log('inside the post!');
   var thisURL = req.body.slice(_.indexOf(req.body, '=') + 1);
-  console.log(thisURL);
-
-  if(archive.isUrlInList(thisURL)){
-    console.log('it is registering as in the list');
-    if(archive.isUrlArchived(thisURL)){
-      res.writeHead(201, httpHelpers.headers);
-      res.end(archive.getArchivedUrl(thisURL));
+  thisURL = thisURL.replace(/\//g, "%2F");
+  thisURL = thisURL.replace(/:/g, "%3A");
+  archive.isUrlInList(thisURL, function(inList){
+    if(inList) {
+      console.log('it is registering as in the list');
+      archive.isUrlArchived(thisURL, function(inArchive){
+        if (inArchive){
+          res.writeHead(200, httpHelpers.headers);
+          archive.getArchivedUrl(thisURL, function(data){
+          res.end(data);
+          });
+        } else {
+          res.writeHead(302, httpHelpers.headers);
+          sendFile(path.join(__dirname, './public/loading.html'),res);
+        }
+      });
     }else{
+      console.log('it is registering as NOT in the list');
+      archive.addUrlToList(thisURL);
       res.writeHead(302, httpHelpers.headers);
       sendFile(path.join(__dirname, './public/loading.html'),res);
     }
-  }else{
-    console.log('it is registering as NOT in the list');
-    archive.addUrlToList(thisURL);
-    res.writeHead(302, httpHelpers.headers);
-    sendFile(path.join(__dirname, './public/loading.html'),res);
-  }
+  });
 });
 
 
